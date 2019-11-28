@@ -1,11 +1,12 @@
 <?php
+	require_once("../classeLayout/classeCabecalhoHTML.php");
+	require_once("cabecalho.php");
 
-	include("../classeLayout/classeCabecalhoHTML.php");
-	include("cabecalho.php");
-	
 	require_once("../classeForm/classeInput.php");
 	require_once("../classeForm/classeForm.php");
 	require_once("../classeForm/classeButton.php");
+	require_once("../classeForm/classeSelect.php");
+	require_once("../classeForm/classeOption.php");
 
 	include("conexao.php");
 	
@@ -18,7 +19,7 @@
 		
 		$colunas=array("ID_POSTAGEM","TEXTO","DATA_POSTAGEM",/*"IMAGEM",*/"ID_LOGIN");
 		$tabelas[0][0]="postagem";
-		$tabelas[0][1]="login";
+		//$tabelas[0][1]="login";
 		$ordenacao = null;
 		$condicao = $_POST["id"];
 		
@@ -40,25 +41,20 @@
 		$action = "insere.php?tabela=postagem";
 		$value_id_postagem = null;
 		$value_texto = null;
-		$value_data_postagem = null;
+		
+		date_default_timezone_set('America/Sao_Paulo');
+		$value_data_postagem = date("Y-m-d");
+
+		///$data = date('d/m/Y', strtotime($data));
+		echo $value_data_postagem;
 		//$value_imagem = null;
-		$selected_id_login = null;
+		$selected_id_login = $_SESSION["login"]["id"];
 	}
 	
 	/////////////////		///////////////		///////////////
 
-	$select = "SELECT ID_LOGIN AS value, NOME AS texto FROM login ORDER BY NOME";
 
-	$stmt = $conexao->prepare($select);
-	$stmt->execute();
-	
-	while($linha=$stmt->fetch()){
-		$matriz[] = $linha;
-	} 
-
-	//////////////		//////////////////		//////////////
-
-	$v = array("action"=>"insere.php?tabela=postagem","method"=>"post");
+	$v = array("action"=>$action,"method"=>"post");
 	$f = new Form($v);
 	
 	$v = array("type"=>"text","name"=>"ID_POSTAGEM","placeholder"=>"ID DA POSTAGEM", "value"=>$value_id_postagem,"disabled"=>$disabled);
@@ -72,37 +68,51 @@
 	$v = array("type"=>"textarea","name"=>"TEXTO","placeholder"=>"TEXTO...", "value"=>$value_texto);
 	$f->add_input($v);
 	
-	$v = array("type"=>"date","name"=>"DATA", "value"=>$value_data_postagem);
+	$v = array("type"=>"hidden","name"=>"DATA_POSTAGEM", "value"=>$value_data_postagem);
 	$f->add_input($v);
 	
 	//$v = array("type"=>"","name"=>"IMAGEM","value"=>$value_imagem);
 	//$f->add_input($v);
 	
-	$v = array("name"=>"ID_LOGIN", "selected"=>$selected_id_login);
-	$f->add_select($v,$matriz);
+	$v = array("type"=>"hidden", "name"=>"ID_LOGIN", "value"=>$selected_id_login);
+	$f->add_input($v);
 	
 	
-	$v = array("type"=>"button","class"=>"cadastrar","texto"=>"CADASTRAR");
+	$v = array("type"=>"button","class"=>"cadastrar","texto"=>"POSTAR");
 	$f->add_button($v);	
 ?>
 
-	<h3>Formulário - Inserir Postagem</h3>
-	<div id="status"></div>
+<h3>Postagens</h3>
 
-	<hr />
-	<?php
-		$f->exibe();
-	?>
+<div id="status"></div>
+
+<hr />
+<?php
+	$f->exibe();
+?>
 		
 	<script>
+		<?php 
+			// permissao:
+			// 1: root
+			// 2: veterinario
+			// 3: usr
+			if($_SESSION["login"]["permissao"] == 1){
+				echo "permissao=1;";
+			}
+			else if($_SESSION["login"]["permissao"] == 2){
+				echo "permissao=2;";
+			}
+			else{
+				echo "permissao=3;";
+			}
+		?>
 		pagina_atual = 1;
-	
+
 		$(function(){
-			
 			carrega_botoes();
 			
 			function carrega_botoes(){
-				
 				$.ajax({
 					url: "quantidade_botoes.php",
 					type: "post",
@@ -120,7 +130,6 @@
 
 			$(document).on("click", ".remover", function(){
 				id_remover = $(this).val();
-
 				$.ajax({
 					url: "remover.php",
 					type: "post",
@@ -138,6 +147,12 @@
 							}
 							paginacao(pagina_atual);
 						}
+						else if(d == '0'){
+								$('#status').html("Você não tem permissão para remover.")
+						}
+						else if(d == "-1"){
+							$('#status').html("Você não está logado.")
+						}
 					}
 				});
 			});
@@ -149,29 +164,31 @@
 			});
 			
 			function paginacao(b){
-				
 				$.ajax({
 					url: "carrega_dados.php",
 					type: "post",
 					data: {
 							tabelas:{
-										0:{0:"POSTAGEM",1:null}
+										0:{0:"POSTAGEM",1:"LOGIN"}
 									},
-							colunas:{0:"ID_POSTAGEM",1:"TEXTO",2:"DATA_POSTAGEM",3:"ID_LOGIN"},
+							colunas:{0:"ID_POSTAGEM",1:"TEXTO",2:"DATA_POSTAGEM",3:"LOGIN.NOME AS LOGIN"},
 							pagina: b
 						  },
 					success: function(matriz){
-						
 						$("tbody").html("");
 						for(i=0;i<matriz.length;i++){
 							tr = "<tr>";
+							tr += "<td>"+matriz[i].LOGIN+"</td>";
 							tr += "<td>"+matriz[i].ID_POSTAGEM+"</td>";
 							tr += "<td>"+matriz[i].TEXTO+"</td>";
 							tr += "<td>"+matriz[i].DATA_POSTAGEM+"</td>";
-							tr += "<td>"+matriz[i].ID_LOGIN+"</td>";
-							tr += "<td><button value='"+matriz[i].ID_POSTAGEM+"' class='remover'>Remover</button>";
+							
+							//if ($.session.get('login')('id') == matriz[i].ID_LOGIN){
+								tr += "<td><button value='"+matriz[i].ID_POSTAGEM+"' class='remover'>Remover</button>";
 							tr += "<button value='"+matriz[i].ID_POSTAGEM+"' class='alterar'>Alterar</button></td>";
 							tr += "</tr>";	
+							
+							
 							$("tbody").append(tr);
 						}
 					}
@@ -179,7 +196,6 @@
 			}
 			
 			$(document).on("click",".alterar",function(){
-			//$(".alterar").click(function(){ 
 				id_alterar = $(this).val();			
 				$.ajax({
 					url: "get_dados_form.php",
@@ -197,7 +213,6 @@
 			});
 				
 				$(document).on("click",".alterando",function(){
-					
 					$.ajax({
 						url:"altera.php?tabela=POSTAGEM",
 						type: "post",
@@ -233,9 +248,7 @@
 					});
 				});
 				
-				//defina a seguinte regra para o botao de envio
 				$(document).on("click",".cadastrar",function(){
-				
 				$.ajax({
 					url: "insere.php?tabela=POSTAGEM",
 					type: "post",
@@ -264,7 +277,6 @@
 					}
 				});
 			});
-			
 		});
 	</script>
 </body>

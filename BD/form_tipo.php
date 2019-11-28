@@ -1,4 +1,7 @@
-<?php
+<?php 
+	error_reporting(-1);
+
+    ini_set("display_errors", 1); 
 
 	include("../classeLayout/classeCabecalhoHTML.php");
 	include("cabecalho.php");
@@ -19,7 +22,7 @@
 		
 		$c = new ControllerBD($conexao);
 		
-		$colunas=array("ID_TIPO","TIPO_DOACAO","ID_DOACAO");
+		$colunas=array("ID_TIPO","TIPO_DOACAO");
 		$tabelas[0][0]="tipo";
 		$tabelas[0][1]=null;
 		$ordenacao = null;
@@ -44,18 +47,6 @@
 		$selected_id_doacao = null;
 	}
 	
-	/////////////////		///////////////		///////////////
-	
-	//seleção dos valores que irão criar o <select>//////
-	$select = "SELECT ID_DOACAO AS value, QUANTIDADE AS texto FROM login ORDER BY DATA_DOACAO";
-	
-	$stmt = $conexao->prepare($select);
-	$stmt->execute();
-	
-	while($linha=$stmt->fetch()){
-		$matriz[] = $linha;
-	} 
-
 	//////////////		//////////////////		//////////////
 
 	$v = array("action"=>"insere.php?tabela=tipo","method"=>"post");
@@ -72,50 +63,197 @@
 	$v = array("type"=>"text","name"=>"TIPO_DOACAO", "value"=>$value_tipo_doacao);
 	$f->add_input($v);
 	
-	$v = array("name"=>"ID_DOACAO", "selected"=>$selected_id_doacao);
-	$f->add_select($v,$matriz);
-	
 	$v = array("type"=>"button","texto"=>"ENVIAR");
 	$f->add_button($v);	
 ?>
 
-		<h3>Formulário - Inserir Tipo de Doação</h3>
-		<div id="status"></div>
+	<h3>Tipo de Doação</h3>
+	<div id="status"></div>
 
-		<hr />
-		<?php
-			$f->exibe();
-		?>
+	<hr />
+	<?php
+		$f->exibe();
+	?>
+	
+<script>
+<?php 
+	// permissao:
+	// 1: root
+	// 2: veterinario
+	// 3: usr
+	if($_SESSION["login"]["permissao"] == 1){
+		echo "permissao=1;";
+	}
+	else if($_SESSION["login"]["permissao"] == 2){
+		echo "permissao=2;";
+	}
+	else{
+		echo "permissao=3;";
+	}
+?>
+	$(function(){
+		carrega_botoes();
 		
-		<script>
-			$(function(){
-				$("button").click(function(){
-					$.ajax ({
-						url: "insere.php?tabela=tipo",
-						type: "post",
-						data: {
-							ID_TIPO: $("input[name='ID_TIPO']").val(),
-							TIPO_DOACAO: $("input[name='TIPO_DOACAO']").val(),
-							ID_DOACAO: $("select[name='ID_DOACAO']").val()
-						},
-						beforeSend:function(){
-							$("button").attr("disabled", true);
-						},
-						success: function(d){
-							
-							$("button").attr("disabled", false);
-							if (d=='1') {
-								$("#status").html("Tipo adicionado com sucesso!");
-								$("#status").css("color","blue");
-							} else {
-								$("#status").html("Tipo não adicionado!");
-								$("#status").css("color","red");
-							}
+		function carrega_botoes(){
+			
+			$.ajax({
+				url: "quantidade_botoes.php",
+				type: "post",
+				data: {tabela: "TIPO"},
+				success: function(q){
+					console.log(q);
+					$("#botoes").html("");
+					for(i=1;i<=q;i++){
+						botao = " <button type='button' class='pg'>" + i + "</button>";
+						$("#botoes").append(botao);
+					}
+				}
+			});
+		}
+		$(document).on("click", ".remover", function(){
+			id_remover = $(this).val();
+
+			$.ajax({
+				url: "remover.php",
+				type: "post",
+				data: {
+					id: id_remover,
+					tabela: "TIPO"
+				},
+				success: function(d){
+					if(d == 1){
+						$("#status").html("Removido com sucesso!");
+						carrega_botoes();
+						qtd = $("tbody tr").length;
+						if(qtd == "1"){
+							pagina_atual--;
 						}
-					});
+						paginacao(pagina_atual);
+					}
+					else if(d == '0'){
+						$('#status').html("Você não tem permissão para remover.")
+					}
+					else if(d == "-1"){
+						$('#status').html("Você não está logado.")
+					}
+				}
+			});
+		});
+		$(document).on("click",".pg",function(){
+			valor_botao = $(this).html();
+			pagina_atual = valor_botao;
+			paginacao(valor_botao);
+		});
+		
+		function paginacao(b){
+			
+			$.ajax({
+				url: "carrega_dados.php",
+				type: "post",
+				data: {
+						tabelas:{
+									0:{0:"TIPO",1:null}
+								},
+						colunas:{0:"ID_TIPO",1:"TIPO_DOACAO"}, 
+						pagina: b
+					  },
+				success: function(matriz){
+					
+					$("tbody").html("");
+					for(i=0;i<matriz.length;i++){
+						tr = "<tr>";
+						tr += "<td>"+matriz[i].ID_TIPO+"</td>";
+                        tr += "<td>"+matriz[i].TIPO_DOACAO+"</td>";
+						tr += "<td><button value='"+matriz[i].ID_TIPO+"' class='remover'>Remover</button>";
+						tr += "<button value='"+matriz[i].ID_TIPO+"' class='alterar'>Alterar</button></td>";
+						tr += "</tr>";	
+						$("tbody").append(tr);
+					}
+				}
+			});
+		}
+		
+		$(document).on("click",".alterar",function(){
+		//$(".alterar").click(function(){ 
+			id_alterar = $(this).val();			
+			$.ajax({
+				url: "get_dados_form.php",
+				type: "post",
+				data: {id: id_alterar, tabela: "TIPO"},
+				success: function(dados){
+					$("input[name='ID_TIPO']").val(dados.ID_TIPO);
+                    $("input[name='TIPO_DOACAO']").val(dados.TIPO_DOACAO);
+					$(".cadastrar").attr("class","alterando");
+					$(".alterando").html("ALTERAR");
+				}
+			});
+		});
+			
+			$(document).on("click",".alterando",function(){
+				
+				$.ajax({
+					url:"altera.php?tabela=TIPO",
+					type: "post",
+					data: {
+						ID_RACA: $("input[name='ID_TIPO']").val(),
+                        NOME: $("input[name='TIPO_DOACAO']").val(),
+					 },
+					beforeSend:function(){
+						$("button").attr("disabled",true);
+					},
+					success: function(d){
+						$("button").attr("disabled",false);
+						if(d=='1'){
+							$("#status").html("Tipo Alterado com sucesso!");
+							$("#status").css("color","green");
+							$(".alterando").attr("class","cadastrar");
+							$(".cadastrar").html("CADASTRAR");
+							$("input[name='ID_TIPO']").val("");
+							$("input[name='TIPO_DOACAO']").val("");
+							
+							paginacao(pagina_atual);
+						}
+						else{
+							console.log(d);
+							$("#status").html("Tipo Não Alterado! Código já existe!");
+							$("#status").css("color","red");
+						}
+					}
 				});
 			});
-		</script>
+			
+			//defina a seguinte regra para o botao de envio
+			$(document).on("click",".cadastrar",function(){
+			
+			$.ajax({
+				url: "insere.php?tabela=TIPO",
+				type: "post",
+				data: {
+						ID_RACA: $("input[name='ID_TIPO']").val(),
+                        NOME: $("input[name='TIPO_DOACAO']").val()
+					 },
+				beforeSend:function(){
+					$("button").attr("disabled",true);
+				},
+				success: function(d){
+					$("button").attr("disabled",false);
+					if(d=='1'){
+						$("#status").html("Tipo inserido com sucesso!");
+						$("#status").css("color","green");
+						carrega_botoes();
+						paginacao(pagina_atual);
+					}
+					else{
+						console.log(d);
+						$("#status").html("Tipo Não Alterado! Código já existe!");
+						$("#status").css("color","red");
+					}
+				}
+			});
+		});
+		
+	});
+	</script>
 	</body>
 </html>
-</html>
+

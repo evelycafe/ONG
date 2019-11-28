@@ -1,4 +1,6 @@
-<?php
+<?php error_reporting(-1);
+
+    ini_set("display_errors", 1); 
 
 	class ControllerBD{
 		
@@ -25,7 +27,7 @@
 			}
 			
 			$update .= " WHERE id_$tabela=:id_$tabela";
-		
+			
 			$stmt= $this->conexao->prepare($update);
 			
 			foreach($campos as $coluna=>$valor){
@@ -80,7 +82,7 @@
 				$stmt->bindValue(":".$indice,$valor);
 			}
 			$r = $stmt->execute();
-			
+		
 			return($r);
 			//echo "Cadastrado com sucesso";
 		}
@@ -107,12 +109,25 @@
 					}
 					$sql .= " INNER JOIN ".$v[1];
 					$sql .= " ON 
-						".$v[0].".id_".$v[1]."=".$v[1].".id_".$v[1];
+						".$v[0].".ID_".$v[1]."=".$v[1].".ID_".$v[1];
 				}
 			}
 			if($condicao!=null){
+			if(!is_array($condicao)){
 				$sql .= " WHERE ".$tabelas[0][0].
-				".id_".$tabelas[0][0]."='$condicao'";
+				".ID_".$tabelas[0][0]."='$condicao'";
+				}
+			else{
+				$sql .= " WHERE ";
+				$i = 0;
+				foreach ($condicao as $v){
+					if($i>0){
+						$sql .=" AND ";
+					}
+					$i++;
+					$sql .= $v["coluna"] . "='".$v["valor"]."'";
+				}
+			}
 			}
 			
 			if($ordenacao!=null){
@@ -125,9 +140,9 @@
 			
 			//die($sql);
 			$stmt = $this->conexao->prepare($sql);
-	
+			
 			$stmt->execute();
-
+			
 			return($stmt);
 		}
 		

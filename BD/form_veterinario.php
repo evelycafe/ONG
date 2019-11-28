@@ -1,4 +1,8 @@
-<?php
+<?php 
+	error_reporting(-1);
+
+    ini_set("display_errors", 1); 
+	
 	require_once("../classeLayout/classeCabecalhoHTML.php");
 	require_once("cabecalho.php");
 	
@@ -12,7 +16,7 @@
 
 		$c = new ControllerBD($conexao);
 		$colunas = array("ID_VETERINARIO", "NOME", "ENDERECO", "TELEFONE", "CRV");
-		$tabelas[0][0] = "veterinario";
+		$tabelas[0][0] = "VETERINARIO";
 		$tabelas[0][1] = null;
 		$ordenacao = null;
 		$condicao = $_POST["id"];
@@ -68,7 +72,7 @@
 ?>
 <!DOCTYPE html>
 
-<h3>Formulário - Inserir Veterinário</h3>
+<h3>Veterinário</h3>
 <div id="status"></div>
 
 <hr />
@@ -77,6 +81,21 @@
 
 ?>
 <script>
+<?php 
+	// permissao:
+	// 1: root
+	// 2: veterinario
+	// 3: usr
+	if($_SESSION["login"]["permissao"] == 1){
+		echo "permissao=1;";
+	}
+	else if($_SESSION["login"]["permissao"] == 2){
+		echo "permissao=2;";
+	}
+	else{
+		echo "permissao=3;";
+	}
+?>
 pagina_atual = 1;
 	//quando o documento estiver pronto...
 	$(function(){
@@ -120,6 +139,12 @@ pagina_atual = 1;
 						}
 						paginacao(pagina_atual);
 					}
+					else if(d == '0'){
+						$('#status').html("Você não tem permissão para remover.")
+					}
+					else if(d == "-1"){
+						$('#status').html("Você não está logado.")
+					}
 				}
 			});
 		});
@@ -139,7 +164,7 @@ pagina_atual = 1;
 						tabelas:{
 									0:{0:"VETERINARIO",1:null}
 								},
-						colunas:{0:"ID_VETERINARIO",1:"NOME",3:"ENDERECO",4:"TELEFONE","CRV"}, 
+						colunas:{0:"ID_VETERINARIO",1:"NOME",3:"ENDERECO",4:"TELEFONE",5:"CRV"}, 
 						pagina: b
 					  },
 				success: function(matriz){
@@ -186,7 +211,7 @@ pagina_atual = 1;
 					url:"altera.php?tabela=VETERINARIO",
 					type: "post",
 					data: {
-						ID_LOGIN: $("input[name='ID_VETERINARIO']").val(),
+						ID_VETERINARIO: $("input[name='ID_VETERINARIO']").val(),
 						NOME: $("input[name='NOME']").val(),
 						ENDERECO: $("input[name='ENDERECO']").val(),
 						TELEFONE: $("input[name='TELEFONE']").val(),
