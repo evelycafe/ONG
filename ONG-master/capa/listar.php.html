@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="pt-br"><head>
+<meta http-equiv="content-type" content="text/html; charset=UTF-8">
+		<meta charset="UTF-8">
+		<link href="listar.php_files/styles.css" type="text/css" rel="stylesheet">
+	</head>	
+	<body>
+		<div class="content">
+			<header>
+				<h1>ONG</h1>
+			</header>
+			
+
+				  
+				     
+						<meta charset="utf-8">
+						<style>
+							select, textarea, input{margin:5px;}							
+						</style>
+						<script src="listar.php_files/jquery-3.js"></script>
+					 
+					 
+					 <nav>
+			| <a href="http://localhost/DDS/ONG/BD/listar.php?t=cadastro">Cadastrar</a> | <a href="http://localhost/DDS/ONG/BD/listar.php?t=veterinario">Veterinário</a> | <a href="http://localhost/DDS/ONG/BD/listar.php?t=animal">Animal</a> | <a href="http://localhost/DDS/ONG/BD/listar.php?t=raca">Raça</a> | <a href="http://localhost/DDS/ONG/BD/listar.php?t=especie">Espécie</a> | <a href="http://localhost/DDS/ONG/BD/listar.php?t=consulta">Consulta</a> | <a href="http://localhost/DDS/ONG/BD/listar.php?t=doacao">Doação</a> | <a href="http://localhost/DDS/ONG/BD/listar.php?t=tipo">Tipo de Doação</a> | <a href="http://localhost/DDS/ONG/BD/listar.php?t=historico_atendimento">Histórico de Atendimento</a> | <a href="http://localhost/DDS/ONG/BD/listar.php?t=postagem">Postagem</a> | <a href="http://localhost/DDS/ONG/BD/listar.php?t=comentario">Comentário</a> | <a href="http://localhost/DDS/ONG/BD/logout.php">SAIR</a></nav>
+				<hr>
+
+	<h3>Formulário - Inserir Animal</h3>
+	<div id="status" style="color: green;">Animal inserido com sucesso!</div>
+
+	<hr>
+	<form method="post" action="insere.php?tabela=animal"><div class="entrada"><input type="number" name="ID_ANIMAL" value="12346" placeholder="ID DO ANIMAL..."></div><div class="entrada"><input type="text" name="NOME" value="qwerty" placeholder="NOME DO ANIMAL..."></div><div class="entrada"><input type="number" name="IDADE" value="12" placeholder="IDADE..."></div><div class="entrada"><input type="text" name="OBSERVACAO" value="qwerty" placeholder="OBSERVAÇÃO..."></div><div class="entrada"><select name="ID_LOGIN">
+			  <option value="" selected="selected">::selecione ID_LOGIN::</option><option value="2">Ana Aravecchia</option><option value="1">Evely Cafe</option></select></div><div class="entrada"><select name="ID_RACA">
+			  <option value="">::selecione ID_RACA::</option><option value="100" selected="selected">Chihuahua</option><option value="400">Dourado</option><option value="300">Mini Lop</option><option value="200">Persa</option><option value="500">Sirio</option></select></div><div class="entrada"><input type="date" name="DATA_ADOCAO" placeholder="DATA DE ADOCAO..."></div><div class="entrada"><button type="button" class="cadastrar">CADASTRAR</button></div></form>	
+	<script>
+	permissao=1;	pagina_atual = 1;
+		//quando o documento estiver pronto...
+		$(function(){
+			
+			carrega_botoes();
+			
+			function carrega_botoes(){
+				
+				$.ajax({
+					url: "quantidade_botoes.php",
+					type: "post",
+					data: {tabela: "ANIMAL"},
+					success: function(q){
+						//console.log(q);
+						$("#botoes").html("");
+						for(i=1;i<=q;i++){
+							botao = " <button type='button' class='pg'>" + i + "</button>";
+							$("#botoes").append(botao);
+						}
+					}
+				});
+			}
+
+			$(document).on("click", ".remover", function(){
+				id_remover = $(this).val();
+
+				$.ajax({
+					url: "remover.php",
+					type: "post",
+					data: {
+						id: id_remover,
+						tabela: "ANIMAL"
+					},
+					success: function(d){
+						if(d == 1){
+							$("#status").html("Removido com sucesso");
+							carrega_botoes();
+							qtd = $("tbody tr").length;
+							if(qtd == "1"){
+								pagina_atual--;
+							}
+							paginacao(pagina_atual);
+						}
+						else if(d == '0'){
+							$('#status').html("Você não tem permissão para remover.")
+						}
+						else if(d == "-1"){
+							$('#status').html("Você não está logado.")
+						}
+					}
+				});
+			});
+			
+			$(document).on("click",".pg",function(){
+				valor_botao = $(this).html();
+				pagina_atual = valor_botao;
+				paginacao(valor_botao);
+			});
+			
+			function paginacao(b){
+				
+				$.ajax({
+					url: "carrega_dados.php",
+					type: "post",
+					data: {
+							tabelas: {
+								0:{0:"ANIMAL", 1:"RACA"},
+								1:{0:"ANIMAL", 1:"LOGIN"}
+								},	
+							colunas:{0:"ID_ANIMAL",1:"ANIMAL.NOME as NOME",2:"IDADE",3:"OBSERVACAO",
+									4:"LOGIN.NOME as LOGIN",5:"RACA.NOME AS RACA", 6:"DATA_ADOCAO"},
+							pagina: b
+						  },
+					success: function(matriz){
+						console.log(matriz);
+						$("tbody").html("");
+						for(i=0;i<matriz.length;i++){
+							tr = "<tr>";
+							tr += "<td>"+matriz[i].ID_ANIMAL+"</td>";
+							tr += "<td>"+matriz[i].NOME+"</td>";
+							tr += "<td>"+matriz[i].IDADE+"</td>";
+							tr += "<td>"+matriz[i].OBSERVACAO+"</td>";
+							tr += "<td>"+matriz[i].RACA+"</td>";
+							tr += "<td>"+matriz[i].LOGIN+"</td>";
+							tr += "<td>"+matriz[i].DATA_ADOCAO+"</td>";
+							tr += "<td><button value='"+matriz[i].ID_ANIMAL+"' class='remover'>Remover</button>";
+							tr += "<button value='"+matriz[i].ID_ANIMAL+"' class='alterar'>Alterar</button></td>";
+							tr += "</tr>";	
+							
+							$("tbody").append(tr);
+						}
+					}
+				});
+			}
+			
+			$(document).on("click",".alterar",function(){
+			//$(".alterar").click(function(){ 
+				id_alterar = $(this).val();			
+				$.ajax({
+					url: "get_dados_form.php",
+					type: "post",
+					data: {id: id_alterar, tabela: "ANIMAL"},
+					success: function(dados){
+						$("input[name='ID_ANIMAL']").val(dados.ID_ANIMAL);
+						$("input[name='NOME']").val(dados.NOME);
+						$("input[name='IDADE']").val(dados.IDADE);
+						$("input[name='OBSERVACAO']").val(dados.OBSERVACAO);
+						$("select[name='ID_LOGIN']").val(dados.ID_LOGIN);
+						$("select[name='ID_RACA']").val(dados.ID_RACA);
+						$("input[name='DATA_ADOCAO']").val(dados.DATA_ADOCAO);
+						$(".cadastrar").attr("class","alterando");
+						$(".alterando").html("ALTERAR");
+					}
+				});
+			});
+				
+				$(document).on("click",".alterando",function(){
+					
+					$.ajax({
+						url:"altera.php?tabela=ANIMAL",
+						type: "post",
+						data: {
+							ID_ANIMAL: $("input[name='ID_ANIMAL']").val(),
+							NOME: $("input[name='NOME']").val(),
+							IDADE: $("input[name='IDADE']").val(),
+							OBSERVACAO: $("input[name='OBSERVACAO']").val(),
+							ID_LOGIN: $("select[name='ID_LOGIN']").val(),
+							ID_RACA: $("select[name='ID_RACA']").val(),
+							DATA_ADOCAO: $("input[name='DATA_ADOCAO']").val()
+						 },
+						beforeSend:function(){
+							$("button").attr("disabled",true);
+						},
+						success: function(d){
+							$("button").attr("disabled",false);
+							if(d=='1'){
+								$("#status").html("Animal Alterado com sucesso!");
+								$("#status").css("color","green");
+								$(".alterando").attr("class","cadastrar");
+								$(".cadastrar").html("CADASTRAR");
+								$("input[name='ID_ANIMAL']").val("");
+								$("input[name='NOME']").val("");
+								$("input[name='IDADE']").val("");
+								$("input[name='OBSERVACAO']").val("");
+								$("select[name='ID_LOGIN']").val("");
+								$("select[name='ID_RACA']").val("");
+								$("input[name='DATA_ADOCAO']").val("");
+								paginacao(pagina_atual);
+							}
+							else{
+								console.log(d);
+								$("#status").html("Animal Não Alterado! Código já existe!");
+								$("#status").css("color","red");
+							}
+						}
+					});
+				});
+				
+				//defina a seguinte regra para o botao de envio
+				$(document).on("click",".cadastrar",function(){
+				vetor = {};
+				vetor["ID_ANIMAL"] = $("input[name='ID_ANIMAL']").val();
+				vetor["NOME"] = $("input[name='NOME']").val();
+				vetor["IDADE"] =  $("input[name='IDADE']").val();
+				vetor["OBSERVACAO"] =  $("input[name='OBSERVACAO']").val();
+				vetor["ID_RACA"] =  $("select[name='ID_RACA']").val();
+				
+				if($("select[name='ID_LOGIN']").val() != ''){
+					vetor["ID_LOGIN"] = $("select[name='ID_LOGIN']").val();
+				}
+				
+				if($("input[name='DATA_ADOCAO']").val() != ''){
+					vetor["DATA_ADOCAO"] =  $("input[name='DATA_ADOCAO']").val();
+				}
+				
+				$.ajax({
+					url: "insere.php?tabela=ANIMAL",
+					type: "post",
+					data: vetor,
+					beforeSend:function(){
+						$("button").attr("disabled",true);
+					},
+					success: function(d){
+						console.log(d);
+						$("button").attr("disabled",false);
+						if(d=='1'){
+							$("#status").html("Animal inserido com sucesso!");
+							$("#status").css("color","green");
+							carrega_botoes();
+							paginacao(pagina_atual);
+						}
+						else{
+							console.log(d);
+							$("#status").html("Animal Não inserido! Código já existe!");
+							$("#status").css("color","red");
+						}
+					}
+				});
+			});
+			
+		});
+	</script>
+
+
+<table border="1"><thead><tr><th>ID</th><th>NOME</th><th>IDADE</th><th>OBSERVAÇÃO</th><th>RAÇA</th><th>LOGIN</th><th>DATA DE ADOÇÃO</th><th>Ação</th></tr></thead><tbody><tr><td>12</td><td>qwerty</td><td>12</td><td>qwerty</td><td>Chihuahua</td><td>Ana Aravecchia</td><td>2019-12-10</td><td><button value="12" class="remover">Remover</button><button value="12" class="alterar">Alterar</button></td></tr><tr><td>600</td><td>Rex</td><td>10</td><td>Animal com raiva</td><td>Chihuahua</td><td>Evely Cafe</td><td>2019-10-30</td><td><button value="600" class="remover">Remover</button><button value="600" class="alterar">Alterar</button></td></tr><tr><td>800</td><td>Lili</td><td>20</td><td>Gripe</td><td>Persa</td><td>Ana Aravecchia</td><td>2017-10-30</td><td><button value="800" class="remover">Remover</button><button value="800" class="alterar">Alterar</button></td></tr><tr><td>700</td><td>Bob</td><td>30</td><td>Castração do animal</td><td>Mini Lop</td><td>Evely Cafe</td><td>2016-10-30</td><td><button value="700" class="remover">Remover</button><button value="700" class="alterar">Alterar</button></td></tr><tr><td>900</td><td>Poli</td><td>50</td><td>Castração</td><td>Sirio</td><td>Ana Aravecchia</td><td>2018-10-30</td><td><button value="900" class="remover">Remover</button><button value="900" class="alterar">Alterar</button></td></tr></tbody></table> <hr> <div id="botoes"> <button type="button" class="pg">1</button> <button type="button" class="pg">2</button></div></div></body></html>
